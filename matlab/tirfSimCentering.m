@@ -130,7 +130,7 @@ zoom reset
 fi = frm(idx)-trk(idx).f(1)+1;
 rec = rectangle('Position',[trk(idx).x(fi)+trk(idx).cx(fi)-rCCP-0.5,trk(idx).y(fi)+trk(idx).cy(fi)-rCCP-0.5,2*rCCP+1,2*rCCP+1],'EdgeColor','g');
 subplot('Position',[0.65,0.03,0.23,0.4]);
-cut = image(zeros([2*rCCP+1,2*rCCP+1,3]));
+cut{1} = image(zeros([2*rCCP+1,2*rCCP+1,3]));
 axis equal off
 zoom reset
 hold on
@@ -140,12 +140,21 @@ plot(rMark/2*cos(tfi)+rCCP+1,rMark/2*sin(tfi)+rCCP+1,':','Color',cMark);
 MD = plot(rCCP+1,rCCP+1,marker,'Color',cMark);
 % plot(rCCP+1,rCCP+1,'o','MarkerSize',100,'Color',[.5 .5 1]);
 line([.5,rCCP+1;2*rCCP+1.5,rCCP+1],[rCCP+1,.5;rCCP+1,2*rCCP+1.5],'Color',cMark,'LineStyle',':');
+subplot('Position',[0.89,0.03,0.1,0.2]);
+cut{2} = image(zeros([2*rCCP+1,2*rCCP+1,3]),'ButtonDownFcn',@cutButDown);
+axis equal off
+zoom reset
+subplot('Position',[0.89,0.24,0.1,0.2]);
+cut{3} = image(zeros([2*rCCP+1,2*rCCP+1,3]),'ButtonDownFcn',@cutButDown);
+ci = [1,2,3];
+axis equal off
+zoom reset
 ax(1) = subplot('Position',[0.65,0.455,0.23,0.2]);
 hold on
 RI = cell(1,2);
 RI{1} = plot((1:2*rCCP)/2,zeros(1,2*rCCP),'g');
 RI{2} = plot((1:2*rCCP)/2,zeros(1,2*rCCP),'r');
-ax(2) = subplot('Position',[0.65,0.68,0.23,0.2]);
+ax(2) = subplot('Position',[0.65,0.68,0.23,0.2],'ButtonDownFcn',@graphButDown);
 hold on
 TA = cell(1,2);
 TA{1} = plot(1:N,zeros(1,N),'g');
@@ -154,19 +163,36 @@ TA{3} = line([1 1],[0,1],'Color',[.5 .5 .5]);
 for i = 1:length(tags)
     TA{i+3} = scatter([],[],50,'b',tags(i).marker);
 end
-lst = uicontrol(f,'Style','listbox','String',arrayfun(@(x)sprintf('%3i   (%3i - %3i)',ID(x),trk(x).f(1),trk(x).f(end)),1:length(ID),'Uniform',0),'Units','normalized','Position',[0.89 0.03 0.1 0.96],'Value',idx,'Callback',@lstChange);
+lst = uicontrol(f,'Style','listbox','String',arrayfun(@(x)sprintf('%3i   (%3i - %3i)',ID(x),trk(x).f(1),trk(x).f(end)),1:length(ID),'Uniform',0),'Units','normalized','Position',[0.89 0.45 0.1 0.54],'Value',idx,'Callback',@lstChange);
 txt = uicontrol(f,'Style','text','String',['Frame: ' num2str(frm(idx)) ' / ' num2str(N)],'Units','normalized','Position',[0 0 .05 .02]);
 tagTxt = [];
 for i = 1:length(tags)
     tagTxt = sprintf('%s, %s - %s',tagTxt,tags(i).key,tags(i).name);
 end
-uicontrol(f,'Style','text','String',sprintf('Up / Down - select track\nLeft / Right - selet frame\nHome / End - select first / last frame\nShift + Arrows - shift cut-out\n%s / %s - set begin / end of track (+-1 frame)\nTags: %s',keyBegin,keyEnd,tagTxt(2:end)),'Units','normalized','Position',[0.64 0.89 0.14 0.1],'Max',2);
-uicontrol(f,'Style','pushbutton','String','Reset track to CME detection','Units','normalized','Position',[0.78 0.96 .1 .03],'Max',2,'Callback',@resetTrack);
-uicontrol(f,'Style','pushbutton','String','Resave all cut-outs','Units','normalized','Position',[0.78 0.92 .1 .03],'Callback',@resaveAll);
-chCh = uicontrol(f,'Style','checkbox','String','Show all channels','Value',0,'Units','normalized','Position',[0.78 0.885 .1 .03],'Callback',@showChannels);
+uicontrol(f,'Style','text','String',sprintf('Up / Down - select track\nLeft / Right - selet frame\nHome / End - select first / last frame\nShift + Arrows - shift cut-out\n%s / %s - set begin / end of track (+-1 frame)\nTags: %s',keyBegin,keyEnd,tagTxt(2:end)),'Units','normalized','Position',[0.64 0.89 0.16 0.1],'Max',2);
+% uicontrol(f,'Style','pushbutton','String','Reset track to CME detection','Units','normalized','Position',[0.78 0.96 .1 .03],'Max',2,'Callback',@resetTrack);
+bSave = uicontrol(f,'Style','pushbutton','String','Save changes','Units','normalized','Position',[0.8 0.96 .08 .03],'Enable','off','Callback',@saveTrks);
+uicontrol(f,'Style','pushbutton','String','Resave all cut-outs','Units','normalized','Position',[0.8 0.92 .08 .03],'Callback',@resaveAll);
+% chCh = uicontrol(f,'Style','checkbox','String','Show all channels','Value',0,'Units','normalized','Position',[0.8 0.885 .08 .03],'Callback',@showChannels);
 sld = uicontrol(f,'Style','slider','Min',1,'Max',N,'SliderStep',[1 1]./(N-1),'Value',frm(idx),'Units','normalized','Position',[.05 0 .95 .02],'Callback',@sldChange);
 sldChange(sld);
+if any(changed)
+    bSave.Enable = 'on';
+end
 
+function graphButDown(~,e)
+    sld.Value = max(min(round(e.IntersectionPoint(1)),sld.Max),sld.Min);
+    sldChange(sld);
+end
+function cutButDown(s,~)
+    if s==cut{2}
+        ci = 3-ci;
+        ci(ci==0) = 3;
+    else
+        ci = 4-ci;
+    end
+    showChannels();
+end
 function imgClick(obj,~)
     p = obj.Parent.CurrentPoint(1,1:2);
     eidx = find(arrayfun(@(x)any(x.f==frm(idx)),trk));
@@ -306,13 +332,16 @@ function keyPress(~,e)
             end
         end
     end
+    if any(changed)
+        bSave.Enable = 'on';
+    end
 end
-function resetTrack(~,~)
-    trk(idx).cx(:) = 0;
-    trk(idx).cy(:) = 0;
-    changed(idx) = true;
-    posChange;
-end
+% function resetTrack(~,~)
+%     trk(idx).cx(:) = 0;
+%     trk(idx).cy(:) = 0;
+%     changed(idx) = true;
+%     posChange;
+% end
 function resaveAll(~,~)
     changed(:) = true;
 end
@@ -346,29 +375,35 @@ function showChannels(~,~)
         MD.XData = trk(idx).x(fi)-round(trk(idx).x(fi))-trk(idx).cx(fi)+rCCP+1;
         MD.YData = trk(idx).y(fi)-round(trk(idx).y(fi))-trk(idx).cy(fi)+rCCP+1;
     end
-    if chCh.Value>0
-%         ti = (cutI-reshape(mi(:,1),1,1,[]))./(reshape(mi(:,2)-mi(:,1),1,1,[]));
+%     if chCh.Value>0
+% %         ti = (cutI-reshape(mi(:,1),1,1,[]))./(reshape(mi(:,2)-mi(:,1),1,1,[]));
         ti = (cutI-ax(2).YLim(1))./diff(ax(2).YLim);
-        cut.CData = cat(3,ti(:,:,2),ti(:,:,1),zeros(2*rCCP+1));
-    else
-        cut.CData = cutI(:,:,1);
+        cut{ci(1)}.CData = cat(3,ti(:,:,2),ti(:,:,1),zeros(2*rCCP+1));
+%     else
+        cut{ci(2)}.CData = cutI(:,:,1);
+        cut{ci(3)}.CData = cutI(:,:,2);
+%     end
+end
+function saveTrks(~,~)
+    expTrk.tracks(ID) = trk;
+    save([folder 'Tracking' filesep 'exportedTracks.mat'],'-struct','expTrk');
+    for it = find(changed)
+        for ch = 1:length(chnl)
+            E = zeros([2*rCCP+1,2*rCCP+1,length(trk(it).f)],'single');
+            for fr = 1:length(trk(it).f)
+                E(:,:,fr) = I{ch}(round(trk(it).y(fr)+trk(it).cy(fr))+(0:2*rCCP),round(trk(it).x(fr)+trk(it).cx(fr))+(0:2*rCCP),trk(it).f(fr));
+            end
+            saveTiff(E,[folder 'Tracking' filesep 'Track_' num2str(ID(it)) '_' num2str(chnl(ch).wavelength) '.tif']);
+        end
     end
+    changed(:) = false;
+    bSave.Enable = 'off';
 end
 function closeFig(~,~)
     if any(changed)
         res = questdlg('Save changes?','Finish centering');
         if strcmpi(res,'Yes')
-            expTrk.tracks(ID) = trk;
-            save([folder 'Tracking' filesep 'exportedTracks.mat'],'-struct','expTrk');
-            for it = find(changed)
-                for ch = 1:length(chnl)
-                    E = zeros([2*rCCP+1,2*rCCP+1,length(trk(it).f)],'single');
-                    for fr = 1:length(trk(it).f)
-                        E(:,:,fr) = I{ch}(round(trk(it).y(fr)+trk(it).cy(fr))+(0:2*rCCP),round(trk(it).x(fr)+trk(it).cx(fr))+(0:2*rCCP),trk(it).f(fr));
-                    end
-                    saveTiff(E,[folder 'Tracking' filesep 'Track_' num2str(ID(it)) '_' num2str(chnl(ch).wavelength) '.tif']);
-                end
-            end
+            saveTrks();
         elseif ~strcmpi(res,'No')
             return;
         end
