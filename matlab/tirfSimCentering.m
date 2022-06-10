@@ -72,6 +72,20 @@ if ~isempty(err)
     end
     fprintf('Corrupted tracks repaired: %i\n', length(err));
 end
+err = find(arrayfun(@(t)min(t.x+t.cx)<0,trk)|arrayfun(@(t)min(t.y+t.cy)<0,trk));
+if ~isempty(err)
+    for i = err
+        ii = (trk(i).x+trk(i).cx)<0 | (trk(i).y+trk(i).cy)<0;
+        trk(i).f(ii) = [];
+        trk(i).x(ii) = [];
+        trk(i).y(ii) = [];
+        trk(i).cx(ii) = [];
+        trk(i).cy(ii) = [];
+        trk(i).tag(ii) = [];
+        changed(i) = true;
+    end
+    fprintf('Invalid starts/ends repaired: %i\n', length(err));
+end
 % end track correction
 idx = 1;
 frm = cellfun(@(x)x(1),{trk.f});
@@ -121,9 +135,8 @@ if ~verLessThan('matlab','9.4')
     f.WindowState = 'maximized';
 end
 subplot('Position',[0.01,0.03,0.63,0.96]);
-img = image(I{1}(rCCP+1:end-rCCP,rCCP+1:end-rCCP,frm(idx)));
+img = image(I{1}(rCCP+1:end-rCCP,rCCP+1:end-rCCP,frm(idx)),'ButtonDownFcn',@imgClick);
 colormap(gray(256));
-img.ButtonDownFcn = @imgClick;
 set(gca,'CLim',mi(1,:));
 axis equal off
 zoom reset
