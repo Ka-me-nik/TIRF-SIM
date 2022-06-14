@@ -320,49 +320,65 @@ function keyPress(~,e)
                 lst.Value = min(idx+1,length(ID));
                 lstChange(lst);
             case keyBegin
-                if frm(idx)==trk(idx).f(1)-1
-                    trk(idx).f = [frm(idx),trk(idx).f];
-                    trk(idx).x = [-1000,trk(idx).x];
-                    trk(idx).cx = [trk(idx).x(2)+trk(idx).cx(1)+1000,trk(idx).cx];
-                    trk(idx).y = [-1000,trk(idx).y];
-                    trk(idx).cy = [trk(idx).y(2)+trk(idx).cy(1)+1000,trk(idx).cy];
-                    trk(idx).tag = [0,trk(idx).tag];
-                    A{idx} = [0,0;A{idx}];
+                if frm(idx)<trk(idx).f(1)
+                    d = trk(idx).f(1)-frm(idx);
+                    if d>1 && ~strcmp(questdlg(sprintf('Stretch start of track by %i frames?',d),'Track start','OK','Cancel','OK'),'OK')
+                        return;
+                    end
+                    trk(idx).f = [frm(idx)+(0:d-1),trk(idx).f];
+                    trk(idx).x = [-1000*ones(1,d),trk(idx).x];
+                    trk(idx).cx = [(trk(idx).x(d+1)+trk(idx).cx(1)+1000)*ones(1,d),trk(idx).cx];
+                    trk(idx).y = [-1000*ones(1,d),trk(idx).y];
+                    trk(idx).cy = [(trk(idx).y(d+1)+trk(idx).cy(1)+1000)*ones(1,d),trk(idx).cy];
+                    trk(idx).tag = [zeros(1,d),trk(idx).tag];
+                    A{idx} = [zeros(d,2);A{idx}];
                     lst.String{idx} = sprintf('%3i   (%3i - %3i)',ID(idx),trk(idx).f(1),trk(idx).f(end));
                     posChange();
                     changed(idx) = true;
-                elseif frm(idx)==trk(idx).f(1)+1
-                    trk(idx).f(1) = [];
-                    trk(idx).x(1) = [];
-                    trk(idx).cx(1) = [];
-                    trk(idx).y(1) = [];
-                    trk(idx).cy(1) = [];
-                    trk(idx).tag(1) = [];
-                    A{idx}(1,:) = [];
+                elseif frm(idx)>trk(idx).f(1) && frm(idx)<=trk(idx).f(end)
+                    d = frm(idx)-trk(idx).f(1);
+                    if d>1 && ~strcmp(questdlg(sprintf('Shrink start of track by %i frames?',d),'Track start','OK','Cancel','OK'),'OK')
+                        return;
+                    end
+                    trk(idx).f(1:d) = [];
+                    trk(idx).x(1:d) = [];
+                    trk(idx).cx(1:d) = [];
+                    trk(idx).y(1:d) = [];
+                    trk(idx).cy(1:d) = [];
+                    trk(idx).tag(1:d) = [];
+                    A{idx}(1:d,:) = [];
                     lst.String{idx} = sprintf('%3i   (%3i - %3i)',ID(idx),trk(idx).f(1),trk(idx).f(end));
                     posChange();
                     changed(idx) = true;
                 end
             case keyEnd
-                if frm(idx)==trk(idx).f(end)+1
-                    trk(idx).f = [trk(idx).f,frm(idx)];
-                    trk(idx).x = [trk(idx).x,-1000];
-                    trk(idx).cx = [trk(idx).cx,trk(idx).x(end-1)+trk(idx).cx(end)+1000];
-                    trk(idx).y = [trk(idx).y,-1000];
-                    trk(idx).cy = [trk(idx).cy,trk(idx).y(end-1)+trk(idx).cy(end)+1000];
-                    trk(idx).tag = [trk(idx).tag,0];
-                    A{idx} = [A{idx};0,0];
+                if frm(idx)>trk(idx).f(end)
+                    d = frm(idx)-trk(idx).f(end);
+                    if d>1 && ~strcmp(questdlg(sprintf('Stretch end of track by %i frames?',d),'Track end','OK','Cancel','OK'),'OK')
+                        return;
+                    end
+                    trk(idx).f = [trk(idx).f,frm(idx)+(1-d:0)];
+                    trk(idx).x = [trk(idx).x,-1000*ones(1,d)];
+                    trk(idx).cx = [trk(idx).cx,(trk(idx).x(end-d)+trk(idx).cx(end)+1000)*ones(1,d)];
+                    trk(idx).y = [trk(idx).y,-1000*ones(1,d)];
+                    trk(idx).cy = [trk(idx).cy,(trk(idx).y(end-d)+trk(idx).cy(end)+1000)*ones(1,d)];
+                    trk(idx).tag = [trk(idx).tag,zeros(1,d)];
+                    A{idx} = [A{idx};zeros(d,2)];
                     lst.String{idx} = sprintf('%3i   (%3i - %3i)',ID(idx),trk(idx).f(1),trk(idx).f(end));
                     posChange();
                     changed(idx) = true;
-                elseif frm(idx)==trk(idx).f(end)-1
-                    trk(idx).f(end) = [];
-                    trk(idx).x(end) = [];
-                    trk(idx).cx(end) = [];
-                    trk(idx).y(end) = [];
-                    trk(idx).cy(end) = [];
-                    trk(idx).tag(end) = [];
-                    A{idx}(end,:) = [];
+                elseif frm(idx)<trk(idx).f(end) && frm(idx)>=trk(idx).f(1)
+                    d = trk(idx).f(end)-frm(idx);
+                    if d>1 && ~strcmp(questdlg(sprintf('Shrink end of track by %i frames?',d),'Track end','OK','Cancel','OK'),'OK')
+                        return;
+                    end
+                    trk(idx).f(end-d+1:end) = [];
+                    trk(idx).x(end-d+1:end) = [];
+                    trk(idx).cx(end-d+1:end) = [];
+                    trk(idx).y(end-d+1:end) = [];
+                    trk(idx).cy(end-d+1:end) = [];
+                    trk(idx).tag(end-d+1:end) = [];
+                    A{idx}(end-d+1:end,:) = [];
                     lst.String{idx} = sprintf('%3i   (%3i - %3i)',ID(idx),trk(idx).f(1),trk(idx).f(end));
                     posChange();
                     changed(idx) = true;
