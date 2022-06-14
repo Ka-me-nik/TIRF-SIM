@@ -93,14 +93,24 @@ frm = cellfun(@(x)x(1),{trk.f});
 fprintf('Loading data ...');
 I = cell(1,nCh);
 mi = zeros(nCh,2);
+pSize = 0;
 for i = 1:nCh
     if strcmpi(chnl(i).movie(end-2:end),'mrc')
-        I{i} = rot90(ReadMRC([folder chnl(i).movie])).*reshape(chnl(i).bleaching,1,1,[]);
+        [m,s] = ReadMRC([folder chnl(i).movie]);
+        pSize = s.rez*1000;
+        I{i} = rot90(m).*reshape(chnl(i).bleaching,1,1,[]);
     else
-        I{i} = loadTiff([folder chnl(i).movie]).*reshape(chnl(i).bleaching,1,1,[]);
+        [m,s] = loadTiff([folder chnl(i).movie]);
+        I{i} = m.*reshape(chnl(i).bleaching,1,1,[]);
+        if pSize==0
+            pSize = 1000/s.XResolution;
+        end
     end
     mi(i,:) = [min(I{i}(:)),max(I{i}(:))];
     I{i} = padarray(I{i},rCCP*[1,1]);
+end
+if pSize==0
+    pSize = 30.65;
 end
 N = size(I{1},3);
 fprintf(' done.\n');
@@ -165,8 +175,8 @@ zoom reset
 ax(1) = subplot('Position',[0.65,0.455,0.23,0.2]);
 hold on
 RI = cell(1,2);
-RI{1} = plot((1:2*rCCP)/2,zeros(1,2*rCCP),'g');
-RI{2} = plot((1:2*rCCP)/2,zeros(1,2*rCCP),'r');
+RI{1} = plot(pSize*(1:2*rCCP)/2,zeros(1,2*rCCP),'g');
+RI{2} = plot(pSize*(1:2*rCCP)/2,zeros(1,2*rCCP),'r');
 ax(2) = subplot('Position',[0.65,0.68,0.23,0.2],'ButtonDownFcn',@graphButDown);
 hold on
 TA = cell(1,2);
