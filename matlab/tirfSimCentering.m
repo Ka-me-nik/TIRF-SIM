@@ -164,14 +164,15 @@ MD = plot(rCCP+1,rCCP+1,marker,'Color',cMark);
 % plot(rCCP+1,rCCP+1,'o','MarkerSize',100,'Color',[.5 .5 1]);
 line([.5,rCCP+1;2*rCCP+1.5,rCCP+1],[rCCP+1,.5;rCCP+1,2*rCCP+1.5],'Color',cMark,'LineStyle',':');
 subplot('Position',[0.89,0.03,0.1,0.2]);
-cut{2} = image(zeros([2*rCCP+1,2*rCCP+1,3]),'ButtonDownFcn',@cutButDown);
+cut{2} = image(zeros([2*rCCP+1,2*rCCP+1,3]));
 axis equal off
 zoom reset
+chs{1} = uicontrol(f,'Style','checkbox','Value',1,'String',chnl(1).wavelength,'ForegroundColor','g','Units','normalized','Position',[0.89 0.02 0.1 .02],'HorizontalAlignment','left','Callback',@channelSelect);
 subplot('Position',[0.89,0.24,0.1,0.2]);
-cut{3} = image(zeros([2*rCCP+1,2*rCCP+1,3]),'ButtonDownFcn',@cutButDown);
-ci = [1,2,3];
+cut{3} = image(zeros([2*rCCP+1,2*rCCP+1,3]));
 axis equal off
 zoom reset
+chs{2} = uicontrol(f,'Style','checkbox','Value',1,'String',chnl(2).wavelength,'ForegroundColor','r','Units','normalized','Position',[0.89 0.23 0.1 .02],'HorizontalAlignment','left','Callback',@channelSelect);
 ax(1) = subplot('Position',[0.65,0.455,0.23,0.2]);
 hold on
 RI = cell(1,2);
@@ -207,12 +208,13 @@ function graphButDown(~,e)
     sld.Value = max(min(round(e.IntersectionPoint(1)),sld.Max),sld.Min);
     sldChange(sld);
 end
-function cutButDown(s,~)
-    if s==cut{2}
-        ci = 3-ci;
-        ci(ci==0) = 3;
-    else
-        ci = 4-ci;
+function channelSelect(s,~)
+    if chs{1}.Value==0 && chs{2}.Value==0
+        if s==chs{1}
+            chs{2}.Value = 1;
+        else
+            chs{1}.Value = 1;
+        end
     end
     showChannels();
 end
@@ -401,10 +403,16 @@ function showChannels(~,~)
 %     if chCh.Value>0
 % %         ti = (cutI-reshape(mi(:,1),1,1,[]))./(reshape(mi(:,2)-mi(:,1),1,1,[]));
         ti = (cutI-ax(2).YLim(1))./diff(ax(2).YLim);
-        cut{ci(1)}.CData = cat(3,ti(:,:,2),ti(:,:,1),zeros(2*rCCP+1));
+        if chs{1}.Value==1 && chs{2}.Value==1
+            cut{1}.CData = cat(3,ti(:,:,2),ti(:,:,1),zeros(2*rCCP+1));
+        elseif chs{1}.Value==1
+            cut{1}.CData = cutI(:,:,1);
+        else
+            cut{1}.CData = cutI(:,:,2);
+        end
 %     else
-        cut{ci(2)}.CData = cutI(:,:,1);
-        cut{ci(3)}.CData = cutI(:,:,2);
+        cut{2}.CData = cutI(:,:,1);
+        cut{3}.CData = cutI(:,:,2);
 %     end
 end
 function saveTrks(~,~)
