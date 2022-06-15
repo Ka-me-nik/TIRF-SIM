@@ -7,6 +7,7 @@
 %    Radius - cut-out radius (size = 2R+1) [10]
 %    Marker - displayed marker for CME track positions ['x']
 %    Color - cut-out overlay color [[.5 .5 1]]
+%    SaveCutouts - generate tif images for changed tracks
 function tirfSimCentering(varargin)
 
 ip = inputParser;
@@ -14,11 +15,13 @@ ip.addOptional('Folder', '', @ischar);
 ip.addParameter('Radius', 10, @(x)validateattributes(x,{'numeric'},{'positive','scalar','integer'}));
 ip.addParameter('Marker', 'x', @ischar);
 ip.addParameter('Color', [.5 .5 1], @(x) ischar(x) || (isnumeric(x) && length(x)==3));
+ip.addParameter('SaveCutouts', false, @(x) (islogical(x) || isnumeric(x)) && length(x)==1);
 ip.parse(varargin{:});
 folder = ip.Results.Folder; % cell folder
 rCCP = ip.Results.Radius;   % cut-out radius (size = 2*r+1)
 marker = ip.Results.Marker; % displayed marker for CME track positions
 cMark = ip.Results.Color;   % cut-out overlay color
+saveCutouts = ip.Results.SaveCutouts>0;
 
 rMark = 1000/65/2; % 1/4 um in TIRF-SIM resolution
 keyBegin = 'b';
@@ -454,13 +457,15 @@ end
 function saveTrks(~,~)
     expTrk.tracks(ID) = trk;
     save([folder 'Tracking' filesep 'exportedTracks.mat'],'-struct','expTrk');
-    for it = find(changed)
-        for ch = 1:length(chnl)
-            E = zeros([2*rCCP+1,2*rCCP+1,length(trk(it).f)],'single');
-            for fr = 1:length(trk(it).f)
-                E(:,:,fr) = I{ch}(round(trk(it).y(fr)+trk(it).cy(fr))+(0:2*rCCP),round(trk(it).x(fr)+trk(it).cx(fr))+(0:2*rCCP),trk(it).f(fr));
+    if saveCutouts
+        for it = find(changed)
+            for ch = 1:length(chnl)
+                E = zeros([2*rCCP+1,2*rCCP+1,length(trk(it).f)],'single');
+                for fr = 1:length(trk(it).f)
+                    E(:,:,fr) = I{ch}(round(trk(it).y(fr)+trk(it).cy(fr))+(0:2*rCCP),round(trk(it).x(fr)+trk(it).cx(fr))+(0:2*rCCP),trk(it).f(fr));
+                end
+                saveTiff(E,[folder 'Tracking' filesep 'Track_' num2str(ID(it)) '_' num2str(chnl(ch).wavelength) '.tif']);
             end
-            saveTiff(E,[folder 'Tracking' filesep 'Track_' num2str(ID(it)) '_' num2str(chnl(ch).wavelength) '.tif']);
         end
     end
     changed(:) = false;
