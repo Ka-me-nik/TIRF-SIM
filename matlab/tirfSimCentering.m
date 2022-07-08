@@ -275,9 +275,9 @@ function keyPress(~,e)
         elseif fi==length(trk(idx).f)+1
             trk(idx).f = [trk(idx).f,frm(idx)];
             trk(idx).x = [trk(idx).x,-1000];
-            trk(idx).cx = [trk(idx).cx,trk(idx).x(end-d)+trk(idx).cx(end)+1000];
+            trk(idx).cx = [trk(idx).cx,trk(idx).x(end-1)+trk(idx).cx(end)+1000];
             trk(idx).y = [trk(idx).y,-1000];
-            trk(idx).cy = [trk(idx).cy,trk(idx).y(end-d)+trk(idx).cy(end)+1000];
+            trk(idx).cy = [trk(idx).cy,trk(idx).y(end-1)+trk(idx).cy(end)+1000];
             trk(idx).tag = [trk(idx).tag,0];
             A{idx} = [A{idx};0,0];
             lst.String{idx} = sprintf('%3i   (%3i - %3i)',ID(idx),trk(idx).f(1),trk(idx).f(end));
