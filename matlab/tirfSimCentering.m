@@ -75,20 +75,6 @@ if ~isempty(err)
     end
     fprintf('Corrupted tracks repaired: %i\n', length(err));
 end
-err = find(arrayfun(@(t)min(t.x+t.cx)<0,trk)|arrayfun(@(t)min(t.y+t.cy)<0,trk));
-if ~isempty(err)
-    for i = err
-        ii = (trk(i).x+trk(i).cx)<0 | (trk(i).y+trk(i).cy)<0;
-        trk(i).f(ii) = [];
-        trk(i).x(ii) = [];
-        trk(i).y(ii) = [];
-        trk(i).cx(ii) = [];
-        trk(i).cy(ii) = [];
-        trk(i).tag(ii) = [];
-        changed(i) = true;
-    end
-    fprintf('Invalid starts/ends repaired: %i\n', length(err));
-end
 err = find(arrayfun(@(t)length(t.cx)<length(t.x),trk));
 if ~isempty(err)
     for i = err
