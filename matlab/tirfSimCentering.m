@@ -89,6 +89,16 @@ if ~isempty(err)
     end
     fprintf('Invalid starts/ends repaired: %i\n', length(err));
 end
+err = find(arrayfun(@(t)length(t.cx)<length(t.x),trk));
+if ~isempty(err)
+    for i = err
+        ii = length(trk(i).cx);
+        trk(i).f = trk(i).f(1:ii);
+        trk(i).x = trk(i).x(1:ii);
+        changed(i) = true;
+    end
+    fprintf('Corrupted track ends repaired: %i\n', length(err));
+end
 % end track correction
 idx = 1;
 frm = cellfun(@(x)x(1),{trk.f});
