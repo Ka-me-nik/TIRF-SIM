@@ -123,7 +123,7 @@ if exist(fn,'file')~=2
 end
 trk = load(fn);
 trk = trk.tracks;
-% trk = trk([trk.nSeg]==1);
+trk = trk([trk.nSeg]==1);
 [~,i] = sort([trk.lifetime_s],'descend');
 trk = trk(i);
 nt = numel(trk);
@@ -131,8 +131,10 @@ nt = numel(trk);
 x = NaN(1,nt);
 y = NaN(1,nt);
 for t = 1:nt
-    x(t) = round(nanmean(trk(t).x(1,:)));
-    y(t) = round(nanmean(trk(t).y(1,:)));
+    trk(t).x = trk(t).x(1,:);
+    trk(t).y = trk(t).y(1,:);
+    x(t) = round(nanmean(trk(t).x));
+    y(t) = round(nanmean(trk(t).y));
 end
 trk = trk(msk(sub2ind(size(msk), y, x))==1);
 trk = trk([trk.lifetime_s] >= 5*framerate);
