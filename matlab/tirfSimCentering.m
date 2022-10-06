@@ -86,6 +86,14 @@ if ~isempty(err)
     fprintf('Corrupted track ends repaired: %i\n', length(err));
 end
 % end track correction
+% load secondary tracks for comparison
+d = dir([folder 'Tracking' filesep 'tracks-*.mat']);
+trk2 = struct('name',cellfun(@(n)n(8:end-4),{d.name},'Uniform',0),'tracks',cell(size({d.name})));
+for i = 1:numel(d)
+    trk2(i).tracks = load([d(i).folder filesep d(i).name]);
+    trk2(i).tracks = trk2(i).tracks.tracks(ID);
+end
+
 idx = 1;
 frm = cellfun(@(x)x(1),{trk.f});
 
@@ -151,6 +159,12 @@ axis equal off
 zoom reset
 fi = frm(idx)-trk(idx).f(1)+1;
 rec = rectangle('Position',[trk(idx).x(fi)+trk(idx).cx(fi)-rCCP-0.5,trk(idx).y(fi)+trk(idx).cy(fi)-rCCP-0.5,2*rCCP+1,2*rCCP+1],'EdgeColor','g');
+rec2 = cell(1,numel(trk2));
+for i = 1:numel(trk2)
+    t2i = trk2(i).tracks(idx);
+    tri = frm(idx)-t2i.f(1)+1;
+    rec2{i} = rectangle('Position',[t2i.x(tri)+t2i.cx(tri)-rCCP-0.5,t2i.y(tri)+t2i.cy(tri)-rCCP-0.5,2*rCCP+1,2*rCCP+1],'EdgeColor','y');
+end
 subplot('Position',[0.65,0.03,0.23,0.4]);
 cut{1} = image(zeros([2*rCCP+1,2*rCCP+1,3]));
 axis equal off
@@ -235,6 +249,17 @@ function sldChange(obj,~)
     set(txt,'String',sprintf('Frame: %i / %i',frm(idx),N));
     img.CData = I{1}(rCCP+1:end-rCCP,rCCP+1:end-rCCP,frm(idx));
     posChange;
+    for index = 1:numel(trk2)
+        t2i = trk2(index).tracks(idx);
+        tri = frm(idx)-t2i.f(1)+1;
+        if tri<1 || tri>length(t2i.f)
+            rec2{index}.LineStyle = ':';
+        else
+            rec2{index}.LineStyle = '-';
+        end
+        tri = max(min(tri,length(t2i.f)),1);
+        rec2{index}.Position = [t2i.x(tri)+t2i.cx(tri)-rCCP-0.5,t2i.y(tri)+t2i.cy(tri)-rCCP-0.5,rec2{index}.Position(3:4)];
+    end
     uicontrol(txt);
 end
 function posChange()
