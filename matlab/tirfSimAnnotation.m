@@ -7,21 +7,37 @@
 % Named parameters:
 %    Radius - cut-out radius (size = 2R+1) [10]
 %    Marker - displayed marker for track positions ['x']
-%    Color - cut-out overlay color [[.5 .5 1]]
+%    ColorCutout - cut-out overlay color [[.5 .5 1]]
+%    ColorTracks - tracks marker color for individual status states [[1 .2 .2;1 1 .2;.2 1 .2]]
 function tirfSimAnnotation(varargin)
 
 ip = inputParser;
 ip.addOptional('Folder', '', @ischar);
 ip.addOptional('Annotator', '', @ischar);
 ip.addParameter('Radius', 10, @(x)validateattributes(x,{'numeric'},{'positive','scalar','integer'}));
-ip.addParameter('Marker', 'x', @ischar);
-ip.addParameter('Color', [.5 .5 1], @(x) ischar(x) || (isnumeric(x) && length(x)==3));
+ip.addParameter('MarkerCutout', 'x', @ischar);
+ip.addParameter('ColorCutout', [.5 .5 1], @(x) ischar(x) || (isnumeric(x) && length(x)==3));
+ip.addParameter('MarkerTracks', ['x','x','x'], @(x)(ischar(x) && size(x,2)==1));
+ip.addParameter('MarkerSizeTracks', [6; 6; 6], @(x)(isnumeric(x) && size(x,2)==1));
+ip.addParameter('ColorTracks', [1 .5 .9;1 1 0;.5 1 .5], @(x)(isnumeric(x) && size(x,2)==3));
 ip.parse(varargin{:});
-folder = ip.Results.Folder;       % cell folder
-annotator = ip.Results.Annotator; % annotator name
-rCCP = ip.Results.Radius;         % cut-out radius (size = 2*r+1)
-marker = ip.Results.Marker;       % displayed marker for CME track positions
-cMark = ip.Results.Color;         % cut-out overlay color
+folder = ip.Results.Folder;        % cell folder
+annotator = ip.Results.Annotator;  % annotator name
+rCCP = ip.Results.Radius;          % cut-out radius (size = 2*r+1)
+marker = ip.Results.MarkerCutout;  % displayed marker in the cutout
+cMark = ip.Results.ColorCutout;    % cut-out overlay color
+mTracks = ip.Results.MarkerTracks; % tracks marker (for individual status states)
+sTracks = ip.Results.MarkerSizeTracks; % tracks marker size (for individual status states)
+cTracks = ip.Results.ColorTracks;   % tracks marker color (for individual status states)
+if size(mTracks,1)==1
+    mTracks = repmat(mTracks,3,1);
+end
+if size(sTracks,1)==1
+    sTracks = repmat(sTracks,3,1);
+end
+if size(cTracks,1)==1
+    cTracks = repmat(cTracks,3,1);
+end
 
 rMark = 1000/65/2; % 1/4 um in TIRF-SIM resolution
 keyBegin = 'b';
@@ -157,7 +173,9 @@ zoom reset
 axi.Toolbar.Visible = 'on';
 fi = frm(idx)-trk(idx).start+1;
 rec = rectangle(axi,'Position',[trk(idx).x(fi)-rCCP-0.5,trk(idx).y(fi)-rCCP-0.5,2*rCCP+1,2*rCCP+1],'EdgeColor','g');
-all = plot(axi,1,1,'LineStyle','none','Marker',marker,'MarkerEdgeColor','y','MarkerSize',6,'ButtonDownFcn',@imgClick,'Visible','off');
+for i = 1:3
+    all{i} = plot(axi,1,1,'LineStyle','none','Marker',mTracks(i),'MarkerEdgeColor',cTracks(i,:),'MarkerSize',sTracks(i),'MarkerIndices',find([trk.status]==i-1),'ButtonDownFcn',@imgClick,'Visible','off');
+end
 % axd = subplot('Position',[0.01,0.04,0.63,0.19],'ButtonDownFcn',@graphButDown,'Visible','off','XLim',[1,N],'YLim',[0,20]);
 axd = subplot('Position',[0.01,0.02,0.63,0.01],'ButtonDownFcn',@graphButDown,'Visible','off','XLim',[1,N],'YLim',[0,20]);
 hold(axd,'on');
@@ -167,16 +185,16 @@ axd.Position = [0.01,0.04,0.63,0.19];
 %     plot(trk(i).start:trk(i).start+numel(trk(i).x)-1,zeros(1,numel(trk(i).x)),'ButtonDownFcn',{@selectTrack,i});
 % end
 subplot('Position',[0.65,0.03,0.23,0.4]);
-cut{1} = image(zeros([2*rCCP+1,2*rCCP+1,3]));
+cut{1} = image(zeros([2*rCCP+1,2*rCCP+1,3]),'ButtonDownFcn',@cutClick);
 axis equal off
 zoom reset
 hold on
 tfi = 0:pi/50:2*pi;
-plot(rMark*cos(tfi)+rCCP+1,rMark*sin(tfi)+rCCP+1,':','Color',cMark);
-plot(rMark/2*cos(tfi)+rCCP+1,rMark/2*sin(tfi)+rCCP+1,':','Color',cMark);
-MD = plot(rCCP+1,rCCP+1,marker,'Color',cMark);
+plot(rMark*cos(tfi)+rCCP+1,rMark*sin(tfi)+rCCP+1,':','Color',cMark,'ButtonDownFcn',@cutClick);
+plot(rMark/2*cos(tfi)+rCCP+1,rMark/2*sin(tfi)+rCCP+1,':','Color',cMark,'ButtonDownFcn',@cutClick);
+MD = plot(rCCP+1,rCCP+1,marker,'Color',cMark,'ButtonDownFcn',@cutClick);
 % plot(rCCP+1,rCCP+1,'o','MarkerSize',100,'Color',[.5 .5 1]);
-line([.5,rCCP+1;2*rCCP+1.5,rCCP+1],[rCCP+1,.5;rCCP+1,2*rCCP+1.5],'Color',cMark,'LineStyle',':');
+line([.5,rCCP+1;2*rCCP+1.5,rCCP+1],[rCCP+1,.5;rCCP+1,2*rCCP+1.5],'Color',cMark,'LineStyle',':','ButtonDownFcn',@cutClick);
 subplot('Position',[0.89,0.03,0.1,0.2]);
 cut{2} = image(zeros([2*rCCP+1,2*rCCP+1,3]));
 axis equal off
@@ -208,7 +226,7 @@ tagTxt = [];
 for i = 1:length(tags)
     tagTxt = sprintf('%s, %s - %s',tagTxt,tags(i).key,tags(i).name);
 end
-uicontrol(f,'Style','text','FontSize',7,'String',sprintf('Up, Down / Left, Right - select track / frame\nHome / End - select first / last frame\nCtrl+click / Delete / x - create / delete / split track\nShift + Arrows - shift cut-out\n%s / %s - set begin / end of track\nspace / n - change status / next unsolved track\nTags: %s\na / s / d / 4 / 5 - all / snakes / distances / 488 / 560',keyBegin,keyEnd,tagTxt(2:end)),'Units','normalized','Position',[0.64 0.89 0.16 0.1],'Max',2);
+uicontrol(f,'Style','text','FontSize',7,'String',sprintf('Up, Down / Left, Right - select track / frame\nHome / End - select first / last frame\nCtrl+click / Delete / x - create / delete / split track\nShift + Arrows - shift cut-out\n%s / %s - set begin / end of track\nspace / n - change status / next unsolved track\nTags: %s\na / s / d / 4 / 5 - all / snakes / distances / 488 / 560\nClick - select nearest track / shift cutout',keyBegin,keyEnd,tagTxt(2:end)),'Units','normalized','Position',[0.64 0.89 0.16 0.1],'Max',2);
 bSave = uicontrol(f,'Style','pushbutton','String','Save changes','Units','normalized','Position',[0.8 0.96 .08 .03],'Enable','off','Callback',@saveTrks);
 chAll = uicontrol(f,'Style','checkbox','String','Show all tracks','Value',0,'Units','normalized','Position',[0.8 0.94 .08 .02],'Callback',@posChange);
 chSnake = uicontrol(f,'Style','checkbox','String','Show snakes','Value',0,'Units','normalized','Position',[0.8 0.92 .08 .02],'Callback',@posChange);
@@ -249,6 +267,19 @@ function channelSelect(s,~)
         end
     end
     showChannels();
+end
+function cutClick(obj,e)
+    p = round(obj.Parent.CurrentPoint(1,1:2))-rCCP-1;
+    if e.Button==1
+        fi = frm(idx)-trk(idx).start+1;
+        trk(idx).x(fi) = trk(idx).x(fi) + p(1);
+        trk(idx).y(fi) = trk(idx).y(fi) + p(2);
+        trk(idx).status = 1;
+        changed = true;
+        posChange;
+        calcCirc(idx,frm(idx));
+        lst.String{idx} = listTxt(idx);
+    end
 end
 function imgClick(obj,e)
     p = round(obj.Parent.CurrentPoint(1,1:2));
@@ -304,13 +335,18 @@ function posChange(~,~)
     rec.Position = [trk(idx).x(fi)-rCCP-0.5,trk(idx).y(fi)-rCCP-0.5,rec.Position(3:4)];
     if chAll.Value>0
         ti = arrayfun(@(t)t.start<=frm(idx)&&frm(idx)<t.start+numel(t.x),trk);
-        all.XData = arrayfun(@(t)t.x(frm(idx)-t.start+1),trk(ti));
-        all.YData = arrayfun(@(t)t.y(frm(idx)-t.start+1),trk(ti));
-        all.Visible = 'on';
+        for ia = 1:3
+            all{ia}.XData = arrayfun(@(t)t.x(frm(idx)-t.start+1),trk(ti));
+            all{ia}.YData = arrayfun(@(t)t.y(frm(idx)-t.start+1),trk(ti));
+            all{ia}.MarkerIndices = find([trk(ti).status]==ia-1);
+            all{ia}.Visible = 'on';
+        end
     else
-        all.Visible = 'off';
+        for ia = 1:3
+            all{ia}.Visible = 'off';
+        end
     end
-    delete(axi.Children(1:end-3));
+    delete(axi.Children(1:end-5));
     nco = length(axi.ColorOrder);
     if chSnake.Value>0
         for k=1:length(trk)
@@ -416,6 +452,7 @@ function keyPress(~,e)
                 end
                 changed = true;
                 lst.String{idx} = listTxt(idx);
+                posChange;
             case 'a'
                 chAll.Value = 1-chAll.Value;
                 posChange;
