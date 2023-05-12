@@ -20,6 +20,7 @@ ip.addParameter('ColorCutout', [.5 .5 1], @(x) ischar(x) || (isnumeric(x) && len
 ip.addParameter('MarkerTracks', ['x','x','x'], @(x)(ischar(x) && size(x,2)==1));
 ip.addParameter('MarkerSizeTracks', [6; 6; 6], @(x)(isnumeric(x) && size(x,2)==1));
 ip.addParameter('ColorTracks', [1 .5 .9;1 1 0;.5 1 .5], @(x)(isnumeric(x) && size(x,2)==3));
+ip.addParameter('ColorGrid', [.5 .5 1], @(x) ischar(x) || (isnumeric(x) && length(x)==3));
 ip.parse(varargin{:});
 folder = ip.Results.Folder;        % cell folder
 annotator = ip.Results.Annotator;  % annotator name
@@ -28,7 +29,8 @@ marker = ip.Results.MarkerCutout;  % displayed marker in the cutout
 cMark = ip.Results.ColorCutout;    % cut-out overlay color
 mTracks = ip.Results.MarkerTracks; % tracks marker (for individual status states)
 sTracks = ip.Results.MarkerSizeTracks; % tracks marker size (for individual status states)
-cTracks = ip.Results.ColorTracks;   % tracks marker color (for individual status states)
+cTracks = ip.Results.ColorTracks;  % tracks marker color (for individual status states)
+cGrid = ip.Results.ColorGrid;      % grid color
 if size(mTracks,1)==1
     mTracks = repmat(mTracks,3,1);
 end
@@ -172,6 +174,8 @@ hold(axi,'on');
 zoom reset
 axi.Toolbar.Visible = 'on';
 fi = frm(idx)-trk(idx).start+1;
+s = size(img.CData).'.*[1,2,3]/4+.5;
+grid = plot([s(2,:),.5,.5,.5;s(2,:),(size(img.CData,2)+.5)*[1,1,1]],[.5,.5,.5,s(1,:);(size(img.CData,1)+.5)*[1,1,1],s(1,:)],'Color',cGrid,'LineStyle','--');
 rec = rectangle(axi,'Position',[trk(idx).x(fi)-rCCP-0.5,trk(idx).y(fi)-rCCP-0.5,2*rCCP+1,2*rCCP+1],'EdgeColor','g');
 for i = 1:3
     all{i} = plot(axi,1,1,'LineStyle','none','Marker',mTracks(i),'MarkerEdgeColor',cTracks(i,:),'MarkerSize',sTracks(i),'MarkerIndices',find([trk.status]==i-1),'ButtonDownFcn',@imgClick,'Visible','off');
@@ -346,7 +350,7 @@ function posChange(~,~)
             all{ia}.Visible = 'off';
         end
     end
-    delete(axi.Children(1:end-5));
+    delete(axi.Children(1:end-5-6));
     nco = length(axi.ColorOrder);
     if chSnake.Value>0
         for k=1:length(trk)
