@@ -230,11 +230,13 @@ tagTxt = [];
 for i = 1:length(tags)
     tagTxt = sprintf('%s, %s - %s',tagTxt,tags(i).key,tags(i).name);
 end
-uicontrol(f,'Style','text','FontSize',7,'String',sprintf('Up, Down / Left, Right - select track / frame\nHome / End - select first / last frame\nCtrl+click / Delete / x - create / delete / split track\nShift + Arrows - shift cut-out\n%s / %s - set begin / end of track\nspace / n - change status / next unsolved track\nTags: %s\na / s / d / 4 / 5 - all / snakes / distances / 488 / 560\nClick - select nearest track / shift cutout',keyBegin,keyEnd,tagTxt(2:end)),'Units','normalized','Position',[0.64 0.89 0.16 0.1],'Max',2);
+uicontrol(f,'Style','text','FontSize',7,'String',sprintf('Up, Down / Left, Right - select track / frame\nHome / End - select first / last frame\nCtrl+click / Delete / x - create / delete / split track\nShift + Arrows - shift cut-out\n%s / %s - set begin / end of track\nspace / n - change status / next unsolved track\nTags: %s\na / s / d / g / 4 / 5 - all / snakes / distances / grid / 488 / 560\nClick - select nearest track / shift cutout',keyBegin,keyEnd,tagTxt(2:end)),'Units','normalized','Position',[0.64 0.89 0.16 0.1],'Max',2);
 bSave = uicontrol(f,'Style','pushbutton','String','Save changes','Units','normalized','Position',[0.8 0.96 .08 .03],'Enable','off','Callback',@saveTrks);
-chAll = uicontrol(f,'Style','checkbox','String','Show all tracks','Value',0,'Units','normalized','Position',[0.8 0.94 .08 .02],'Callback',@posChange);
-chSnake = uicontrol(f,'Style','checkbox','String','Show snakes','Value',0,'Units','normalized','Position',[0.8 0.92 .08 .02],'Callback',@posChange);
-chDist = uicontrol(f,'Style','checkbox','String','Show tracks distance','Value',0,'Units','normalized','Position',[0.8 0.90 .08 .02],'Callback',@posChange);
+chAll = uicontrol(f,'Style','checkbox','String','Show all tracks','Value',0,'Units','normalized','Position',[0.8 0.945 .08 .015],'Callback',@posChange);
+chSnake = uicontrol(f,'Style','checkbox','String','Show snakes','Value',0,'Units','normalized','Position',[0.8 0.93 .08 .015],'Callback',@posChange);
+chDist = uicontrol(f,'Style','checkbox','String','Show tracks distance','Value',0,'Units','normalized','Position',[0.8 0.915 .08 .015],'Callback',@posChange);
+chGrid = uicontrol(f,'Style','checkbox','String','Show grid','Value',0,'Units','normalized','Position',[0.8 0.90 .08 .015],'Callback',@gridChange);
+gridChange;
 % uicontrol(f,'Style','pushbutton','String','Resave all cut-outs','Units','normalized','Position',[0.8 0.92 .08 .03],'Callback',@resaveAll);
 % chCh = uicontrol(f,'Style','checkbox','String','Show all channels','Value',0,'Units','normalized','Position',[0.8 0.885 .08 .03],'Callback',@showChannels);
 sld = uicontrol(f,'Style','slider','Min',1,'Max',N,'SliderStep',[1 1]./(N-1),'Value',frm(idx),'Units','normalized','Position',[.05 0 .95 .02],'Callback',@sldChange);
@@ -257,6 +259,16 @@ function txt = listTxt(index)
 %     txt = sprintf('<html><body style="background-color:#%s">%3i   (%3i - %3i)</body></html>',col,index,trk(index).start,trk(index).start+numel(trk(index).x)-1);
 %     txt = sprintf('<html><font color=#%s><b>%3i   (%3i - %3i)</b></font></html>',col,index,trk(index).start,trk(index).start+numel(trk(index).x)-1);
     txt = sprintf('%s  %3i   (%3i - %3i)',sta,index,trk(index).start,trk(index).start+numel(trk(index).x)-1);
+end
+function gridChange(~,~)
+    if chGrid.Value>0
+        val = 'on';
+    else
+        val = 'off';
+    end
+    for ig = 1:length(grid)
+        grid(ig).Visible = val;
+    end
 end
 function graphButDown(~,e)
     sld.Value = max(min(round(e.IntersectionPoint(1)),sld.Max),sld.Min);
@@ -466,6 +478,9 @@ function keyPress(~,e)
             case 's'
                 chSnake.Value = 1-chSnake.Value;
                 posChange;
+            case 'g'
+                chGrid.Value = 1-chGrid.Value;
+                gridChange;
             case '4'
                 chs{1}.Value = 1-chs{1}.Value;
                 channelSelect(chs{1});
