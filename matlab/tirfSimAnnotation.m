@@ -45,7 +45,8 @@ rMark = 1000/65/2; % 1/4 um in TIRF-SIM resolution
 keyBegin = 'b';
 keyEnd = 'e';
 % tags
-tags = struct('name',{'ring','unknown'},'tag',{1,2},'key',{'o','u'},'marker',{'o','x'});
+tags = struct('name',{'ring','cluster'},'tag',{1,2},'key',{'q','c'},'marker',{'o','x'});
+initCheck = 'ag4'; % (a)ll,(s)nakes, (d)istances, (g)rid, (4)88, (5)60
 
 caption = 'TIRF-SIM annotation';
 if isempty(folder)
@@ -141,9 +142,11 @@ fprintf('Calculating intensities ...');
 A = cell(1,length(trk));
 tc = zeros([2*rCCP+1,2*rCCP+1,nCh]);
 for i = 1:length(trk)
+    trk(i).x = round(trk(i).x);
+    trk(i).y = round(trk(i).y);
     for j = 1:length(trk(i).x)
         for c = 1:nCh
-            tc(:,:,c) = I{c}(round(trk(i).y(j))+(0:2*rCCP),round(trk(i).x(j))+(0:2*rCCP),trk(i).start+j-1);
+            tc(:,:,c) = I{c}(trk(i).y(j)+(0:2*rCCP),trk(i).x(j)+(0:2*rCCP),trk(i).start+j-1);
             A{i}(j,c) = max(sum(sum(tc(:,:,c).*C)));
         end
     end
@@ -203,12 +206,12 @@ subplot('Position',[0.89,0.03,0.1,0.2]);
 cut{2} = image(zeros([2*rCCP+1,2*rCCP+1,3]));
 axis equal off
 zoom reset
-chs{1} = uicontrol(f,'Style','checkbox','Value',1,'String',chnl(1).wavelength,'ForegroundColor','g','Units','normalized','Position',[0.89 0.02 0.1 .02],'HorizontalAlignment','left','Callback',@channelSelect);
+chs{1} = uicontrol(f,'Style','checkbox','Value',any(initCheck=='4'),'String',chnl(1).wavelength,'ForegroundColor','g','Units','normalized','Position',[0.89 0.02 0.1 .02],'HorizontalAlignment','left','Callback',@channelSelect);
 subplot('Position',[0.89,0.24,0.1,0.2]);
 cut{3} = image(zeros([2*rCCP+1,2*rCCP+1,3]));
 axis equal off
 zoom reset
-chs{2} = uicontrol(f,'Style','checkbox','Value',1,'String',chnl(2).wavelength,'ForegroundColor','r','Units','normalized','Position',[0.89 0.23 0.1 .02],'HorizontalAlignment','left','Callback',@channelSelect);
+chs{2} = uicontrol(f,'Style','checkbox','Value',any(initCheck=='5'),'String',chnl(2).wavelength,'ForegroundColor','r','Units','normalized','Position',[0.89 0.23 0.1 .02],'HorizontalAlignment','left','Callback',@channelSelect);
 ax(1) = subplot('Position',[0.65,0.455,0.23,0.2],'XLim',[-1,1]*(rCCP+.5)*pSize);
 hold(ax(1),'on');
 RI = cell(1,2);
@@ -230,12 +233,12 @@ tagTxt = [];
 for i = 1:length(tags)
     tagTxt = sprintf('%s, %s - %s',tagTxt,tags(i).key,tags(i).name);
 end
-uicontrol(f,'Style','text','FontSize',7,'String',sprintf('Up, Down / Left, Right - select track / frame\nHome / End - select first / last frame\nCtrl+click / Delete / x - create / delete / split track\nShift + Arrows - shift cut-out\n%s / %s - set begin / end of track\nspace / n - change status / next unsolved track\nTags: %s\na / s / d / g / 4 / 5 - all / snakes / distances / grid / 488 / 560\nClick - select nearest track / shift cutout',keyBegin,keyEnd,tagTxt(2:end)),'Units','normalized','Position',[0.64 0.89 0.16 0.1],'Max',2);
+uicontrol(f,'Style','text','FontSize',7,'String',sprintf('Up, Down / Left, Right - select track / frame\nHome / End - select first / last frame\nCtrl+click / Delete / x / m - create / delete / split / merge track\nShift + Arrows - shift cut-out\n%s / %s - set begin / end of track\nspace / n - change status / next unsolved track\nTags: %s\na / s / d / g / 4 / 5 - all / snakes / distances / grid / 488 / 560\nClick - select nearest track / shift cutout',keyBegin,keyEnd,tagTxt(2:end)),'Units','normalized','Position',[0.64 0.89 0.16 0.1],'Max',2);
 bSave = uicontrol(f,'Style','pushbutton','String','Save changes','Units','normalized','Position',[0.8 0.96 .08 .03],'Enable','off','Callback',@saveTrks);
-chAll = uicontrol(f,'Style','checkbox','String','Show all tracks','Value',0,'Units','normalized','Position',[0.8 0.945 .08 .015],'Callback',@posChange);
-chSnake = uicontrol(f,'Style','checkbox','String','Show snakes','Value',0,'Units','normalized','Position',[0.8 0.93 .08 .015],'Callback',@posChange);
-chDist = uicontrol(f,'Style','checkbox','String','Show tracks distance','Value',0,'Units','normalized','Position',[0.8 0.915 .08 .015],'Callback',@posChange);
-chGrid = uicontrol(f,'Style','checkbox','String','Show grid','Value',0,'Units','normalized','Position',[0.8 0.90 .08 .015],'Callback',@gridChange);
+chAll = uicontrol(f,'Style','checkbox','String','Show all tracks','Value',any(initCheck=='a'),'Units','normalized','Position',[0.8 0.945 .08 .015],'Callback',@posChange);
+chSnake = uicontrol(f,'Style','checkbox','String','Show snakes','Value',any(initCheck=='s'),'Units','normalized','Position',[0.8 0.93 .08 .015],'Callback',@posChange);
+chDist = uicontrol(f,'Style','checkbox','String','Show tracks distance','Value',any(initCheck=='d'),'Units','normalized','Position',[0.8 0.915 .08 .015],'Callback',@posChange);
+chGrid = uicontrol(f,'Style','checkbox','String','Show grid','Value',any(initCheck=='g'),'Units','normalized','Position',[0.8 0.90 .08 .015],'Callback',@gridChange);
 gridChange;
 % uicontrol(f,'Style','pushbutton','String','Resave all cut-outs','Units','normalized','Position',[0.8 0.92 .08 .03],'Callback',@resaveAll);
 % chCh = uicontrol(f,'Style','checkbox','String','Show all channels','Value',0,'Units','normalized','Position',[0.8 0.885 .08 .03],'Callback',@showChannels);
@@ -247,14 +250,24 @@ end
 
 function txt = listTxt(index)
 %     col = '000000';
-    sta = ' -- ';
+    sta = '-';
     switch trk(index).status
         case 0
 %             col = 'BF0000';
-            sta = '     ';
+            sta = '  ';
         case 2
 %             col = '00BF00';
-            sta = 'OK';
+            sta = 'F';
+    end
+    if any(mod(floor(trk(index).tag/2),2))
+        sta = ['c',sta];
+    else
+        sta = ['  ',sta];
+    end
+    if any(mod(trk(index).tag,2))
+        sta = ['r',sta];
+    else
+        sta = ['  ',sta];
     end
 %     txt = sprintf('<html><body style="background-color:#%s">%3i   (%3i - %3i)</body></html>',col,index,trk(index).start,trk(index).start+numel(trk(index).x)-1);
 %     txt = sprintf('<html><font color=#%s><b>%3i   (%3i - %3i)</b></font></html>',col,index,trk(index).start,trk(index).start+numel(trk(index).x)-1);
@@ -573,6 +586,36 @@ function keyPress(~,e)
                 changed = true;
                 lst.Value = idx2;
                 lstChange(lst);
+            case 'm'
+                crd = round([trk(idx).x(fi),trk(idx).y(fi)]);
+                ti = find(arrayfun(@(t)t.start<=frm(idx)&&frm(idx)<t.start+numel(t.x),trk));
+                idx2 = ti(arrayfun(@(t)round(t.x(frm(idx)-t.start+1))==crd(1)&&round(t.y(frm(idx)-t.start+1))==crd(2),trk(ti)));
+                idx3 = find(idx2==idx);
+                if ~isempty(idx3) && length(idx2)==2
+                    idx2(idx3) = [];
+                    idx3 = [idx;idx2];
+                    if trk(idx2).start+length(trk(idx2).x)-trk(idx).start < trk(idx).start+length(trk(idx).x)-trk(idx2).start
+                        idx3 = [idx2;idx];
+                    end
+                    if strcmp(questdlg('Really merge these tracks?',sprintf('Track %i + %i',idx3(1),idx3(2)),'Yes','No','Yes'),'Yes')
+                        frm(idx3(1)) = frm(idx);
+                        trk(idx3(1)).x = [trk(idx3(1)).x(1:frm(idx)-trk(idx3(1)).start+1),trk(idx3(2)).x(frm(idx)-trk(idx3(2)).start+2:end)];
+                        trk(idx3(1)).y = [trk(idx3(1)).y(1:frm(idx)-trk(idx3(1)).start+1),trk(idx3(2)).y(frm(idx)-trk(idx3(2)).start+2:end)];
+                        trk(idx3(1)).tag = [trk(idx3(1)).tag(1:frm(idx)-trk(idx3(1)).start+1),trk(idx3(2)).tag(frm(idx)-trk(idx3(2)).start+2:end)];
+                        trk(idx3(1)).status = 1;
+                        A{idx3(1)} = [A{idx3(1)}(1:frm(idx)-trk(idx3(1)).start+1,:);A{idx3(2)}(frm(idx)-trk(idx3(2)).start+2:end,:)];
+                        trk(idx3(2)) = [];
+                        frm(idx3(2)) = [];
+                        A(idx3(2)) = [];
+                        lst.String = arrayfun(@(x)listTxt(x),1:length(trk),'Uniform',0);
+                        changed = true;
+                        lst.Value = idx3(1);
+                        if idx3(2)<idx3(1)
+                            lst.Value = idx3(1)-1;
+                        end
+                        lstChange(lst);
+                    end
+                end
             case 'delete'
                 if length(trk)<2 || ~strcmp(questdlg('Really delete this track?',sprintf('Track %i',idx),'Yes','No','Yes'),'Yes')
                     return;
@@ -592,6 +635,8 @@ function keyPress(~,e)
                 showChannels();
                 trk(idx).status = 1;
                 changed = true;
+                lst.String{idx} = listTxt(idx);
+                posChange;
             end
         end
     end
