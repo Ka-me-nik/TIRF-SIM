@@ -220,7 +220,7 @@ RI{2} = plot(ax(1),pSize*(-2*rCCP:2*rCCP)/2,zeros(1,4*rCCP+1),'r');
 % RI{2} = plot(ax(1),pSize*(1:2*rCCP)/2,zeros(1,2*rCCP),'r');
 ax(2) = subplot('Position',[0.65,0.68,0.23,0.2],'ButtonDownFcn',@graphButDown);
 hold(ax(2),'on');
-TA = cell(1,2);
+TA = cell(1,3+length(tags));
 TA{1} = plot(ax(2),1:N,zeros(1,N),'g');
 TA{2} = plot(ax(2),1:N,zeros(1,N),'r');
 TA{3} = line(ax(2),[1 1],[0,1],'Color',[.5 .5 .5]);
@@ -315,7 +315,7 @@ function imgClick(obj,e)
     if e.Button==1
         if ismember('control',get(f,'currentModifier'))            
             idx = length(trk)+1;
-            frm(idx) = sld.Value;
+            frm(idx) = round(sld.Value);
             trk(idx).start = frm(idx);
             trk(idx).x = p(1);
             trk(idx).y = p(2);
@@ -569,7 +569,7 @@ function keyPress(~,e)
                     return;
                 end
                 idx2 = length(trk)+1;
-                frm(idx2) = sld.Value+1;
+                frm(idx2) = round(sld.Value)+1;
                 trk(idx2).start = frm(idx2);
                 trk(idx2).x = trk(idx).x(fi+1:end);
                 trk(idx2).y = trk(idx).y(fi+1:end);
