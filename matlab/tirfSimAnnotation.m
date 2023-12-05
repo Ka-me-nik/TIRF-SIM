@@ -17,7 +17,7 @@ ip.addOptional('Annotator', '', @ischar);
 ip.addParameter('Radius', 10, @(x)validateattributes(x,{'numeric'},{'positive','scalar','integer'}));
 ip.addParameter('MarkerCutout', 'x', @ischar);
 ip.addParameter('ColorCutout', [.5 .5 1], @(x) ischar(x) || (isnumeric(x) && length(x)==3));
-ip.addParameter('MarkerTracks', ['x','x','x'], @(x)(ischar(x) && size(x,2)==1));
+ip.addParameter('MarkerTracks', ['x';'x';'x'], @(x)(ischar(x) && size(x,2)==1));
 ip.addParameter('MarkerSizeTracks', [6; 6; 6], @(x)(isnumeric(x) && size(x,2)==1));
 ip.addParameter('ColorTracks', [1 .5 .9;1 1 0;.5 1 .5], @(x)(isnumeric(x) && size(x,2)==3));
 ip.addParameter('ColorGrid', [.5 .5 1], @(x) ischar(x) || (isnumeric(x) && length(x)==3));
@@ -122,7 +122,7 @@ end
 if pSize==0
     pSize = 30.65;
 end
-cc = cRange(1,2)/cRange(2,2);
+cc = cRange(1,2)/cRange(end,2);
 N = size(I{1},3);
 fprintf(' done.\n');
 
@@ -206,12 +206,20 @@ subplot('Position',[0.89,0.03,0.1,0.2]);
 cut{2} = image(zeros([2*rCCP+1,2*rCCP+1,3]));
 axis equal off
 zoom reset
-chs{1} = uicontrol(f,'Style','checkbox','Value',any(initCheck=='4'),'String',chnl(1).wavelength,'ForegroundColor','g','Units','normalized','Position',[0.89 0.02 0.1 .02],'HorizontalAlignment','left','Callback',@channelSelect);
+chs{1} = uicontrol(f,'Style','checkbox','Value',any(initCheck=='4')||(nCh==1),'String',chnl(1).wavelength,'ForegroundColor','g','Units','normalized','Position',[0.89 0.02 0.1 .02],'HorizontalAlignment','left','Callback',@channelSelect);
+if nCh==1
+    chs{1}.Enable = 'inactive';
+end
 subplot('Position',[0.89,0.24,0.1,0.2]);
 cut{3} = image(zeros([2*rCCP+1,2*rCCP+1,3]));
 axis equal off
 zoom reset
-chs{2} = uicontrol(f,'Style','checkbox','Value',any(initCheck=='5'),'String',chnl(2).wavelength,'ForegroundColor','r','Units','normalized','Position',[0.89 0.23 0.1 .02],'HorizontalAlignment','left','Callback',@channelSelect);
+if nCh==1
+    ch2w = 560;
+else
+    ch2w = chnl(2).wavelength;
+end
+chs{2} = uicontrol(f,'Style','checkbox','Value',any(initCheck=='5'),'String',ch2w,'ForegroundColor','r','Units','normalized','Position',[0.89 0.23 0.1 .02],'HorizontalAlignment','left','Callback',@channelSelect);
 ax(1) = subplot('Position',[0.65,0.455,0.23,0.2],'XLim',[-1,1]*(rCCP+.5)*pSize);
 hold(ax(1),'on');
 RI = cell(1,2);
@@ -294,6 +302,9 @@ function channelSelect(s,~)
         else
             chs{1}.Value = 1;
         end
+    end
+    if nCh==1
+        chs{1}.Value = 1;
     end
     showChannels();
 end
@@ -661,16 +672,12 @@ function showChannels(~,~)
 %         if fi>=1 && fi<=length(trk(idx).x)
 %             A{idx}(fi,iii) = max(sum(sum(cutI(:,:,iii).*C)));
 %         end
+        rad = squeeze(sum(sum(cutI(:,:,iii).*C)));
+        RI{iii}.YData = [rad(end:-1:2);rad];
+        TA{iii}.XData = trk(idx).start:trk(idx).start+numel(trk(idx).x)-1;
+        TA{iii}.YData = A{idx}(:,iii);
     end
-    rad = squeeze(sum(sum(cutI(:,:,1).*C)));
-    RI{1}.YData = [rad(end:-1:2);rad];
-    rad = squeeze(sum(sum(cutI(:,:,2).*C)));
-    RI{2}.YData = [rad(end:-1:2);rad];
-    TA{3}.YData = [min(min(A{idx}(:,1:2))),max(max(A{idx}(:,1:2)))];
-    TA{1}.XData = trk(idx).start:trk(idx).start+numel(trk(idx).x)-1;
-    TA{1}.YData = A{idx}(:,1);
-    TA{2}.XData = trk(idx).start:trk(idx).start+numel(trk(idx).x)-1;
-    TA{2}.YData = A{idx}(:,2);
+    TA{3}.YData = [min(min(A{idx}(:,1:nCh))),max(max(A{idx}(:,1:nCh)))];
     TA{3}.XData = frm(idx)*[1,1];
     for ti = 1:length(tags)
         TA{ti+3}.XData = find(bitand(trk(idx).tag,tags(ti).tag))+trk(idx).start-1;
@@ -685,21 +692,23 @@ function showChannels(~,~)
         MD.XData = trk(idx).x(fi)-round(trk(idx).x(fi))+rCCP+1;
         MD.YData = trk(idx).y(fi)-round(trk(idx).y(fi))+rCCP+1;
     end
-%     if chCh.Value>0
-% %         ti = (cutI-reshape(mi(:,1),1,1,[]))./(reshape(mi(:,2)-mi(:,1),1,1,[]));
+    
+    cut{2}.CData = cutI(:,:,1);
+    if nCh>1
         cutI(:,:,2) = cutI(:,:,2)*cc;
-        ti = (cutI-ax(2).YLim(1))./diff(ax(2).YLim);
-        if chs{1}.Value==1 && chs{2}.Value==1
-            cut{1}.CData = cat(3,ti(:,:,2),ti(:,:,1),zeros(2*rCCP+1));
-        elseif chs{1}.Value==1
-            cut{1}.CData = cutI(:,:,1);
-        else
-            cut{1}.CData = cutI(:,:,2);
-        end
-%     else
-        cut{2}.CData = cutI(:,:,1);
         cut{3}.CData = cutI(:,:,2);
-%     end
+    end
+    ti = (cutI-ax(2).YLim(1))./diff(ax(2).YLim);
+    if nCh==1
+        ti(:,:,2) = 0;
+    end
+    if chs{1}.Value==1 && chs{2}.Value==1
+        cut{1}.CData = cat(3,ti(:,:,2),ti(:,:,1),zeros(2*rCCP+1));
+    elseif chs{1}.Value==1
+        cut{1}.CData = cutI(:,:,1);
+    else
+        cut{1}.CData = cutI(:,:,2);
+    end
 end
 function saveTrks(~,~)
     expTrk.tracks = trk;
