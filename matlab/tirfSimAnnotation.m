@@ -21,6 +21,7 @@ ip.addParameter('MarkerTracks', ['x';'x';'x'], @(x)(ischar(x) && size(x,2)==1));
 ip.addParameter('MarkerSizeTracks', [6; 6; 6], @(x)(isnumeric(x) && size(x,2)==1));
 ip.addParameter('ColorTracks', [1 .5 .9;1 1 0;.5 1 .5], @(x)(isnumeric(x) && size(x,2)==3));
 ip.addParameter('ColorGrid', [.5 .5 1], @(x) ischar(x) || (isnumeric(x) && length(x)==3));
+ip.addParameter('ToolBar', 'none', @ischar);
 ip.parse(varargin{:});
 folder = ip.Results.Folder;        % cell folder
 annotator = ip.Results.Annotator;  % annotator name
@@ -164,9 +165,12 @@ fprintf(' done.\n');
 % end
 % fprintf(' done.\n');
 
-f = figure('Name','TIRF-SIM CCP annotation','Units','normalized','Position',[.04 .04 .9 .9],'Menubar','none','Toolbar','none','WindowKeyPressFcn',@keyPress,'CloseRequestFcn',@closeFig);
+f = figure('Name','TIRF-SIM CCP annotation','Units','normalized','Position',[.04 .04 .9 .9],'Menubar','none','Toolbar',ip.Results.ToolBar,'WindowKeyPressFcn',@keyPress,'CloseRequestFcn',@closeFig);
 if ~verLessThan('matlab','9.4')
     f.WindowState = 'maximized';
+end
+if ~strcmpi(ip.Results.ToolBar,'none')
+    addToolbarExplorationButtons(f);
 end
 axi = subplot('Position',[0.01,0.03,0.63,0.96]);
 img = image(axi,I{1}(rCCP+1:end-rCCP,rCCP+1:end-rCCP,frm(idx)),'ButtonDownFcn',@imgClick);
