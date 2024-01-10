@@ -111,9 +111,9 @@ for i = 1:nCh
         I{i} = rot90(m).*reshape(chnl(i).bleaching,1,1,[]);
     else
         [m,s] = loadTiff([folder chnl(i).movie]);
-        I{i} = m.*reshape(chnl(i).bleaching,1,1,[]);
-        if pSize==0
-            pSize = 1000/s.XResolution;
+        I{i} = single(m).*reshape(chnl(i).bleaching,1,1,[]);
+        if pSize==0 && ~isempty(s(1).XResolution)
+            pSize = 1000/s(1).XResolution;
         end
     end
     mi(i,:) = [min(I{i}(:)),max(I{i}(:))];
@@ -121,7 +121,7 @@ for i = 1:nCh
     I{i} = padarray(I{i},rCCP*[1,1]);
 end
 if pSize==0
-    pSize = 30.65;
+    pSize = 30.65; % 32.2
 end
 cc = cRange(1,2)/cRange(end,2);
 N = size(I{1},3);
@@ -173,8 +173,8 @@ if ~strcmpi(ip.Results.ToolBar,'none')
     addToolbarExplorationButtons(f);
 end
 axi = subplot('Position',[0.01,0.03,0.63,0.96]);
-img = image(axi,I{1}(rCCP+1:end-rCCP,rCCP+1:end-rCCP,frm(idx)),'ButtonDownFcn',@imgClick);
-colormap(gray(256));
+img = imagesc(axi,I{1}(rCCP+1:end-rCCP,rCCP+1:end-rCCP,frm(idx)),'ButtonDownFcn',@imgClick);
+colormap(gray);
 set(axi,'CLim',mi(1,:));
 axis(axi,'equal','off');
 hold(axi,'on');
@@ -196,7 +196,7 @@ axd.Position = [0.01,0.04,0.63,0.19];
 %     plot(trk(i).start:trk(i).start+numel(trk(i).x)-1,zeros(1,numel(trk(i).x)),'ButtonDownFcn',{@selectTrack,i});
 % end
 subplot('Position',[0.65,0.03,0.23,0.4]);
-cut{1} = image(zeros([2*rCCP+1,2*rCCP+1,3]),'ButtonDownFcn',@cutClick);
+cut{1} = imagesc(zeros([2*rCCP+1,2*rCCP+1,3]),'ButtonDownFcn',@cutClick);
 axis equal off
 zoom reset
 hold on
@@ -207,7 +207,7 @@ MD = plot(rCCP+1,rCCP+1,marker,'Color',cMark,'ButtonDownFcn',@cutClick);
 % plot(rCCP+1,rCCP+1,'o','MarkerSize',100,'Color',[.5 .5 1]);
 line([.5,rCCP+1;2*rCCP+1.5,rCCP+1],[rCCP+1,.5;rCCP+1,2*rCCP+1.5],'Color',cMark,'LineStyle',':','ButtonDownFcn',@cutClick);
 subplot('Position',[0.89,0.03,0.1,0.2]);
-cut{2} = image(zeros([2*rCCP+1,2*rCCP+1,3]));
+cut{2} = imagesc(zeros([2*rCCP+1,2*rCCP+1,3]));
 axis equal off
 zoom reset
 chs{1} = uicontrol(f,'Style','checkbox','Value',any(initCheck=='4')||(nCh==1),'String',chnl(1).wavelength,'ForegroundColor','g','Units','normalized','Position',[0.89 0.02 0.1 .02],'HorizontalAlignment','left','Callback',@channelSelect);
@@ -215,7 +215,7 @@ if nCh==1
     chs{1}.Enable = 'inactive';
 end
 subplot('Position',[0.89,0.24,0.1,0.2]);
-cut{3} = image(zeros([2*rCCP+1,2*rCCP+1,3]));
+cut{3} = imagesc(zeros([2*rCCP+1,2*rCCP+1,3]));
 axis equal off
 zoom reset
 if nCh==1
