@@ -116,7 +116,9 @@ for i = 1:nCh
             pSize = 1000/s(1).XResolution;
         end
     end
-    mi(i,:) = [min(I{i}(:)),max(I{i}(:))];
+%     mi(i,:) = [min(I{i}(:)),max(I{i}(:))];
+    si = sort(reshape(I{i}(:,:,round([1,end/2,end])),[],1));
+    mi(i,:) = si(round([0.05,0.9999]*length(si)));
     cRange(i,:) = [0,mean(max(max(I{i})))];
     I{i} = padarray(I{i},rCCP*[1,1]);
 end
@@ -173,9 +175,8 @@ if ~strcmpi(ip.Results.ToolBar,'none')
     addToolbarExplorationButtons(f);
 end
 axi = subplot('Position',[0.01,0.03,0.63,0.96]);
-img = imagesc(axi,I{1}(rCCP+1:end-rCCP,rCCP+1:end-rCCP,frm(idx)),'ButtonDownFcn',@imgClick);
+img = imagesc(axi,I{1}(rCCP+1:end-rCCP,rCCP+1:end-rCCP,frm(idx)),'ButtonDownFcn',@imgClick,mi(1,:));
 colormap(gray);
-set(axi,'CLim',mi(1,:));
 axis(axi,'equal','off');
 hold(axi,'on');
 zoom reset
@@ -432,13 +433,13 @@ function keyPress(~,e)
             trk(idx).x = [trk(idx).x(1),trk(idx).x];
             trk(idx).y = [trk(idx).y(1),trk(idx).y];
             trk(idx).tag = [0,trk(idx).tag];
-            A{idx} = [0,0;A{idx}];
+            A{idx} = [zeros(1,nCh);A{idx}];
             fi = 1;
         elseif fi==length(trk(idx).x)+1
             trk(idx).x = [trk(idx).x,trk(idx).x(end)];
             trk(idx).y = [trk(idx).y,trk(idx).y(end)];
             trk(idx).tag = [trk(idx).tag,0];
-            A{idx} = [A{idx};0,0];
+            A{idx} = [A{idx};zeros(1,nCh)];
         end
         if fi>=1 && fi<=length(trk(idx).x)
             switch e.Key
@@ -525,7 +526,7 @@ function keyPress(~,e)
                     trk(idx).x = [trk(idx).x(1)*ones(1,d),trk(idx).x];
                     trk(idx).y = [trk(idx).y(1)*ones(1,d),trk(idx).y];
                     trk(idx).tag = [zeros(1,d),trk(idx).tag];
-                    A{idx} = [zeros(d,2);A{idx}];
+                    A{idx} = [zeros(d,nCh);A{idx}];
                     for ii=frm(idx):frm(idx)+d-1
                         calcCirc(idx,ii);
                     end
@@ -557,7 +558,7 @@ function keyPress(~,e)
                     trk(idx).x = [trk(idx).x,trk(idx).x(end)*ones(1,d)];
                     trk(idx).y = [trk(idx).y,trk(idx).y(end)*ones(1,d)];
                     trk(idx).tag = [trk(idx).tag,zeros(1,d)];
-                    A{idx} = [A{idx};zeros(d,2)];
+                    A{idx} = [A{idx};zeros(d,nCh)];
                     for ii=frm(idx)-d+1:frm(idx)
                         calcCirc(idx,ii);
                     end
