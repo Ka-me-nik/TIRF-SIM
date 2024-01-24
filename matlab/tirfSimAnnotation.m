@@ -21,7 +21,7 @@ ip.addParameter('MarkerTracks', ['x';'x';'x'], @(x)(ischar(x) && size(x,2)==1));
 ip.addParameter('MarkerSizeTracks', [6; 6; 6], @(x)(isnumeric(x) && size(x,2)==1));
 ip.addParameter('ColorTracks', [1 .5 .9;1 1 0;.5 1 .5], @(x)(isnumeric(x) && size(x,2)==3));
 ip.addParameter('ColorGrid', [.5 .5 1], @(x) ischar(x) || (isnumeric(x) && length(x)==3));
-ip.addParameter('ToolBar', 'none', @ischar);
+ip.addParameter('ToolBar', 'none', @ischar);  % use 'figure' to force figure toolbar
 ip.parse(varargin{:});
 folder = ip.Results.Folder;        % cell folder
 annotator = ip.Results.Annotator;  % annotator name
@@ -42,6 +42,7 @@ if size(cTracks,1)==1
     cTracks = repmat(cTracks,3,1);
 end
 
+colors = 'grby';
 rMark = 1000/65/2; % 1/4 um in TIRF-SIM resolution
 keyBegin = 'b';
 keyEnd = 'e';
@@ -211,7 +212,7 @@ subplot('Position',[0.89,0.03,0.1,0.2]);
 cut{2} = imagesc(zeros([2*rCCP+1,2*rCCP+1,3]));
 axis equal off
 zoom reset
-chs{1} = uicontrol(f,'Style','checkbox','Value',any(initCheck=='4')||(nCh==1),'String',chnl(1).wavelength,'ForegroundColor','g','Units','normalized','Position',[0.89 0.02 0.1 .02],'HorizontalAlignment','left','Callback',@channelSelect);
+chs{1} = uicontrol(f,'Style','checkbox','Value',any(initCheck=='4')||(nCh==1),'String',chnl(1).wavelength,'ForegroundColor',colors(1),'Units','normalized','Position',[0.89 0.02 0.1 .02],'HorizontalAlignment','left','Callback',@channelSelect);
 if nCh==1
     chs{1}.Enable = 'inactive';
 end
@@ -224,21 +225,23 @@ if nCh==1
 else
     ch2w = chnl(2).wavelength;
 end
-chs{2} = uicontrol(f,'Style','checkbox','Value',any(initCheck=='5'),'String',ch2w,'ForegroundColor','r','Units','normalized','Position',[0.89 0.23 0.1 .02],'HorizontalAlignment','left','Callback',@channelSelect);
+chs{2} = uicontrol(f,'Style','checkbox','Value',any(initCheck=='5'),'String',ch2w,'ForegroundColor',colors(2),'Units','normalized','Position',[0.89 0.23 0.1 .02],'HorizontalAlignment','left','Callback',@channelSelect);
 ax(1) = subplot('Position',[0.65,0.455,0.23,0.2],'XLim',[-1,1]*(rCCP+.5)*pSize);
 hold(ax(1),'on');
 RI = cell(1,2);
-RI{1} = plot(ax(1),pSize*(-2*rCCP:2*rCCP)/2,zeros(1,4*rCCP+1),'g');
-RI{2} = plot(ax(1),pSize*(-2*rCCP:2*rCCP)/2,zeros(1,4*rCCP+1),'r');
+for i = 1:nCh
+    RI{1} = plot(ax(1),pSize*(-2*rCCP:2*rCCP)/2,zeros(1,4*rCCP+1),colors(i));
+end
 % RI{2} = plot(ax(1),pSize*(1:2*rCCP)/2,zeros(1,2*rCCP),'r');
 ax(2) = subplot('Position',[0.65,0.68,0.23,0.2],'ButtonDownFcn',@graphButDown);
 hold(ax(2),'on');
-TA = cell(1,3+length(tags));
-TA{1} = plot(ax(2),1:N,zeros(1,N),'g');
-TA{2} = plot(ax(2),1:N,zeros(1,N),'r');
-TA{3} = line(ax(2),[1 1],[0,1],'Color',[.5 .5 .5]);
+TA = cell(1,nCh+1+length(tags));
+for i = 1:nCh
+    TA{i} = plot(ax(2),1:N,zeros(1,N),colors(i));
+end
+TA{nCh+1} = line(ax(2),[1 1],[0,1],'Color',[.5 .5 .5]);
 for i = 1:length(tags)
-    TA{i+3} = scatter(ax(2),[],[],50,'b',tags(i).marker);
+    TA{nCh+1+i} = scatter(ax(2),[],[],50,'b',tags(i).marker);
 end
 lst = uicontrol(f,'Style','listbox','String',arrayfun(@(x)listTxt(x),1:length(trk),'Uniform',0),'Units','normalized','Position',[0.89 0.45 0.1 0.54],'Value',idx,'Callback',@lstChange);
 txt = uicontrol(f,'Style','text','String',['Frame: ' num2str(frm(idx)) ' / ' num2str(N)],'Units','normalized','Position',[0 0 .05 .02]);
@@ -344,6 +347,9 @@ function imgClick(obj,e)
             lstChange(lst);
         else
             eidx = find(arrayfun(@(x)any(x.start<=frm(idx)&frm(idx)<x.start+numel(x.x)),trk));
+            if isempty(eidx)
+                return
+            end
             eidx2 = arrayfun(@(x)frm(idx)-x.start+1,trk(eidx));
             crd = [arrayfun(@(t,i)t.x(i),trk(eidx),eidx2);arrayfun(@(t,i)t.y(i),trk(eidx),eidx2)].';
             d = sqrt(sum((crd-p).^2,2));
@@ -682,16 +688,16 @@ function showChannels(~,~)
         TA{iii}.XData = trk(idx).start:trk(idx).start+numel(trk(idx).x)-1;
         TA{iii}.YData = A{idx}(:,iii);
     end
-    TA{3}.YData = [min(min(A{idx}(:,1:nCh))),max(max(A{idx}(:,1:nCh)))];
-    TA{3}.XData = frm(idx)*[1,1];
+    TA{nCh+1}.YData = [min(min(A{idx}(:,1:nCh))),max(max(A{idx}(:,1:nCh)))];
+    TA{nCh+1}.XData = frm(idx)*[1,1];
     for ti = 1:length(tags)
-        TA{ti+3}.XData = find(bitand(trk(idx).tag,tags(ti).tag))+trk(idx).start-1;
-        TA{ti+3}.YData = TA{1}.YData(TA{ti+3}.XData-trk(idx).start+1);
+        TA{nCh+1+ti}.XData = find(bitand(trk(idx).tag,tags(ti).tag))+trk(idx).start-1;
+        TA{nCh+1+ti}.YData = TA{1}.YData(TA{nCh+1+ti}.XData-trk(idx).start+1);
     end
     ax(2).YLimMode = 'auto';
     ax(2).YLim(1) = 0;
 %     ax(2).YLim = [0,max(A{idx}(:))];
-    TA{3}.YData = ax(2).YLim;
+    TA{nCh+1}.YData = ax(2).YLim;
     ax(1).YLim = ax(2).YLim;
     if fi>=1 && fi<=length(trk(idx).x)
         MD.XData = trk(idx).x(fi)-round(trk(idx).x(fi))+rCCP+1;
